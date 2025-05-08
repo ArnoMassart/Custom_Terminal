@@ -1,8 +1,8 @@
 # Git Shortcuts command line application
 
 ## To use in bash console
-- Add a .bashrc file in your home folder.
-- Add this to the .bashrc to be able to use handy shortcuts
+1. Add a .bashrc file in your home folder.
+2. Add this to the .bashrc to be able to use handy shortcuts
 ```
   # Git shortcuts aliases
 alias git-shortcuts="~/OneDrive/Documenten/custom-terminal/git-shortcuts.ts"
@@ -24,13 +24,13 @@ alias gcb="git-shortcuts gcb"
 alias gsh="git-shortcuts gsh"
 alias cl="git-shortcuts cl"
 ```
-- Now use this command to refresh the bash terminal:
+3. Now use this command to refresh the bash terminal:
 ```
 source ~/.bashrc
 ```
 - '~' is the home folder where the .bashrc file is located
 
-- Now use gsh to view all the commands available: output will look like this:
+4. Now use gsh to view all the commands available: output will look like this:
 ```
   Git Shortcuts - Available Commands:
 ----------------------------------
