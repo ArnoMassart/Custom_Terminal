@@ -30,7 +30,7 @@ source ~/.bashrc
 ```
 - '~' is the home folder where the .bashrc file is located
 
-4. Now use gsh to view all the commands available: output will look like this:
+4. Now use the 'gsh' command to view all the commands available, output will look like this:
 ```
   Git Shortcuts - Available Commands:
 ----------------------------------
