@@ -9,69 +9,94 @@ import {
   bold,
 } from "https://deno.land/std@0.224.0/fmt/colors.ts"
 
-// Define the shortcuts and their corresponding commands
+const VERSION = "1.0.4"
+const LATEST_UPDATE = "12/12/2025"
+
+/* -----------------------------------------------------
+   STREAMING EXECUTION HELPERS
+----------------------------------------------------- */
+
+async function runStreaming(cmd: string, args: string[] = []): Promise<void> {
+  const command = new Deno.Command(cmd, {
+    args,
+    stdin: "inherit",
+    stdout: "piped",
+    stderr: "piped",
+  })
+
+  const child = command.spawn()
+
+  // Stream stdout
+  ;(async () => {
+    for await (const chunk of child.stdout) {
+      await Deno.stdout.write(chunk)
+    }
+  })()
+
+  // Stream stderr
+  ;(async () => {
+    for await (const chunk of child.stderr) {
+      await Deno.stderr.write(chunk)
+    }
+  })()
+
+  await child.status // just wait — ignore CommandStatus
+}
+
+/* -----------------------------------------------------
+   GIT SHORTCUTS
+----------------------------------------------------- */
+
 const SHORTCUTS: Record<string, (args: string[]) => Promise<void> | void> = {
-  gaa: async () => {
-    // git add .
-    const command = new Deno.Command("git", { args: ["add", "."] })
-    const { stdout } = await command.output()
-    console.log(new TextDecoder().decode(stdout))
-  },
-  gra: async () => {
-    // git add .
-    const command = new Deno.Command("git", { args: ["restore", "."] })
-    const { stdout } = await command.output()
-    console.log(new TextDecoder().decode(stdout))
-  },
+  // git add .
+  gaa: async () => await runStreaming("git", ["add", "."]),
+
+  // git restore .
+  gra: async () => await runStreaming("git", ["restore", "."]),
+
+  // git commit -m "message"
   gcm: async (args: string[]) => {
-    // git commit -m "message"
     if (args.length === 0) {
       console.error("%cError: Commit message is required", "color: red")
       return
     }
-    const message = args.join(" ")
-    const command = new Deno.Command("git", { args: ["commit", "-m", message] })
-    const { stdout } = await command.output()
-    console.log(new TextDecoder().decode(stdout))
+    await runStreaming("git", ["commit", "-m", args.join(" ")])
   },
-  gp: async () => {
-    // git push
-    const command = new Deno.Command("git", { args: ["push"] })
-    const { stdout } = await command.output()
-    console.log(new TextDecoder().decode(stdout))
-  },
+
+  // git push
+  gp: async () => await runStreaming("git", ["push"]),
+
+  // git push branch
   gpb: async (args: string[]) => {
-    // git push branch
     if (args.length === 0) {
       console.error("%cError: Branch name is required", "color: red")
       return
     }
+    await runStreaming("git", ["push", "origin", args[0]])
+  },
 
-    const command = new Deno.Command("git", {
-      args: ["push", "origin", args[0]],
-    })
-    const { stdout } = await command.output()
-    console.log(new TextDecoder().decode(stdout))
-  },
-  gpl: async () => {
-    // git pull
-    const command = new Deno.Command("git", { args: ["pull"] })
-    const { stdout } = await command.output()
-    console.log(new TextDecoder().decode(stdout))
-  },
+  // git pull
+  gpl: async () => await runStreaming("git", ["pull"]),
+
+  // git pull branch
   gplb: async (args: string[]) => {
-    // git pull
     if (args.length === 0) {
       console.error("%cError: Branch name is required", "color: red")
       return
     }
-
-    const command = new Deno.Command("git", {
-      args: ["pull", "origin", args[0]],
-    })
-    const { stdout } = await command.output()
-    console.log(new TextDecoder().decode(stdout))
+    await runStreaming("git", ["pull", "origin", args[0]])
   },
+
+  // git merge branch
+  gmb: async (args: string[]) => {
+    if (args.length === 0) {
+      console.error("%cError: Branch name is required", "color: red")
+      return
+    }
+    await runStreaming("git", ["merge", args[0]])
+  },
+
+  // git status — still colored!
   gs: async () => {
     const command = new Deno.Command("git", { args: ["status"] })
     const { stdout } = await command.output()
@@ -79,30 +104,30 @@ const SHORTCUTS: Record<string, (args: string[]) => Promise<void> | void> = {
 
     const lines = output.split("\n")
 
-    // Tracks which section we're in
     let currentColor: ((text: string) => string) | null = null
 
     for (const line of lines) {
       if (line.includes("Changes to be committed:")) {
         currentColor = green
-        console.log(line) // Header stays white
+        console.log(line)
       } else if (line.includes("Changes not staged for commit:")) {
         currentColor = red
-        console.log(line) // Header stays white
+        console.log(line)
       } else if (line.includes("Untracked files:")) {
         currentColor = red
-        console.log(line) // Header stays white
+        console.log(line)
       } else if (line.trim() === "") {
         currentColor = null
-        console.log(line) // Blank line, just print
+        console.log(line)
       } else if (line.trimStart().startsWith("(")) {
-        console.log(line) // Instruction line, stays white
+        console.log(line)
       } else {
-        // Apply section color if set
         console.log(currentColor ? currentColor(line) : line)
       }
     }
   },
+
+  // git log — still colored!
   gl: async () => {
     const command = new Deno.Command("git", {
       args: ["log", "--decorate", "-n", "4"],
@@ -116,7 +141,6 @@ const SHORTCUTS: Record<string, (args: string[]) => Promise<void> | void> = {
       if (line.startsWith("commit")) {
         let coloredLine = line
 
-        // Final full decoration coloring
         coloredLine = coloredLine.replace(/\(([^)]+)\)/, (_, group1) => {
           const parts = group1.split(", ").map((part: string) => {
             if (part.startsWith("HEAD -> ")) {
@@ -135,50 +159,48 @@ const SHORTCUTS: Record<string, (args: string[]) => Promise<void> | void> = {
       }
     }
   },
-  gb: async () => {
-    // git branch
-    const command = new Deno.Command("git", { args: ["branch"] })
-    const { stdout } = await command.output()
-    console.log(new TextDecoder().decode(stdout))
-  },
+
+  // git branch
+  gb: async () => await runStreaming("git", ["branch"]),
+
+  // git branch -d
   gbd: async (args: string[]) => {
-    // git branch -d
     if (args.length === 0) {
       console.error("%cError: Branch name is required", "color: red")
       return
     }
-    const command = new Deno.Command("git", { args: ["branch", "-d", args[0]] })
-    const { stdout } = await command.output()
-    console.log(new TextDecoder().decode(stdout))
+    await runStreaming("git", ["branch", "-d", args[0]])
   },
+
+  // git checkout
   gco: async (args: string[]) => {
-    // git checkout
     if (args.length === 0) {
       console.error("%cError: Branch name is required", "color: red")
       return
     }
-    const command = new Deno.Command("git", { args: ["checkout", args[0]] })
-    const { stdout } = await command.output()
-    console.log(new TextDecoder().decode(stdout))
+    await runStreaming("git", ["checkout", args[0]])
   },
+
+  // git checkout -b
   gcb: async (args: string[]) => {
-    // git checkout -b (new branch)
     if (args.length === 0) {
       console.error("%cError: Branch name is required", "color: red")
       return
     }
-    const command = new Deno.Command("git", {
-      args: ["checkout", "-b", args[0]],
-    })
-    const { stdout } = await command.output()
-    console.log(new TextDecoder().decode(stdout))
+    await runStreaming("git", ["checkout", "-b", args[0]])
   },
-  cl: async () => {
-    // git branch
-    const command = new Deno.Command("clear")
-    const { stdout } = await command.output()
-    console.log(new TextDecoder().decode(stdout))
-  },
+
+  /* -----------------------------------------------------
+     OTHER SHORTCUTS
+  ----------------------------------------------------- */
+
+  // clear
+  cl: async () => await runStreaming("clear"),
+
+  // deno upgrade
+  du: async () => await runStreaming("deno", ["upgrade"]),
+
+  // show help
   gsh: () => {
     console.log(
       `%c
@@ -191,6 +213,7 @@ gp                - git push
 gpb branch-name   - git push origin branch-name
 gpl               - git pull
 gplb branch-name  - git pull origin branch-name
+gmb branch-name   - git merge branch-name
 gs                - git status
 gl                - git log
 gb                - git branch
@@ -198,12 +221,29 @@ gbd branch-name   - git branch -d branch-name
 gco branch-name   - git checkout branch-name
 gcb branch-name   - git checkout -b branch-name
 cl                - clear
+du                - deno upgrade
+gsv               - Show version
 gsh               - Show this help message
     `,
       "color: orange"
     )
   },
+  gsv: () => {
+    console.log(
+      `%c
+Git Shortcuts - Details:
+----------------------------------
+Version: ${VERSION}
+Latest update: ${LATEST_UPDATE}
+    `,
+      "color: orange"
+    )
+  },
 }
+
+/* -----------------------------------------------------
+   MAIN
+----------------------------------------------------- */
 
 async function main() {
   const args = parse(Deno.args)
