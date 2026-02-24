@@ -78,6 +78,8 @@ const SHORTCUTS: Record<string, (args: string[]) => Promise<void> | void> = {
   // git pull
   gpl: async () => await runStreaming("git", ["pull"]),
 
+  gplr: async () => await runStreaming("git", ["pull", "--rebase"]),
+
   // git pull branch
   gplb: async (args: string[]) => {
     if (args.length === 0) {
@@ -212,6 +214,7 @@ gcm "message"     - git commit -m "message"
 gp                - git push
 gpb branch-name   - git push origin branch-name
 gpl               - git pull
+gplr              - git pull --rebase
 gplb branch-name  - git pull origin branch-name
 gmb branch-name   - git merge branch-name
 gs                - git status
@@ -225,7 +228,7 @@ du                - deno upgrade
 gsv               - Show version
 gsh               - Show this help message
     `,
-      "color: orange"
+      "color: orange",
     )
   },
   gsv: () => {
@@ -236,7 +239,7 @@ Git Shortcuts - Details:
 Version: ${VERSION}
 Latest update: ${LATEST_UPDATE}
     `,
-      "color: orange"
+      "color: orange",
     )
   },
 }
@@ -253,7 +256,7 @@ async function main() {
   if (!command) {
     console.log(
       "%cNo command provided. Use 'help' to see available commands.",
-      "color: orange"
+      "color: orange",
     )
     return
   }
@@ -273,7 +276,7 @@ async function main() {
     } else {
       console.error(
         `%cUnknown error executing command: ${String(error)}`,
-        "color: red"
+        "color: red",
       )
     }
   }
