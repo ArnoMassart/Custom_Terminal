@@ -9,8 +9,8 @@ import {
   bold,
 } from "https://deno.land/std@0.224.0/fmt/colors.ts"
 
-const VERSION = "1.0.4"
-const LATEST_UPDATE = "12/12/2025"
+const VERSION = "1.0.5"
+const LATEST_UPDATE = "24/02/2026"
 
 /* -----------------------------------------------------
    STREAMING EXECUTION HELPERS
